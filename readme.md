@@ -4,7 +4,7 @@ An air-gapped, production-grade edge decision support system designed for autono
 
 ---
 
-##  System Architecture & Multi-Task Pipeline
+## 🛠️ System Architecture & Multi-Task Pipeline
 
 The platform operates on a robust three-task concurrent pipeline optimized for real-time inference on edge hardware, utilizing camera intrinsic calibration matrices to seamlessly transform and align spatial coordinates.
 
@@ -26,7 +26,7 @@ The platform operates on a robust three-task concurrent pipeline optimized for r
 
 ---
 
-##  Live Telemetry Data Structure
+## 📊 Live Telemetry Data Structure
 
 During standard runtime execution, the system aggregates tracking metadata and state transforms into structured JSON payloads. Below is an operational log snippet from a synchronized three-task tracking execution synchronized with the evaluation API:
 
@@ -94,7 +94,7 @@ During standard runtime execution, the system aggregates tracking metadata and s
 
 ---
 
-##  Inference & Verification Visuals
+## 📷 Inference & Verification Visuals
 
 Below are the live execution proofs, cross-perspective matching evaluations, and localization performance metrics collected from active high-dynamic flight simulations:
 
@@ -103,31 +103,30 @@ Below are the live execution proofs, cross-perspective matching evaluations, and
 
 ![Aerial Inference](docs/assets/aerial_inference.png)
 
-### 2. Comprehensive Multi-Task Pipeline & Low-Altitude Log Verification (`task2_telemetry_log.png`)
-*A unified terminal execution log validating the synchronized deployment of all three core tasks under low-altitude operational constraints (Z ≈ 10.89m). The telemetry explicitly verifies:*
+#### 🎯 DINOv2 Cross-Modal Baseline Targets
+*These ground-truth patches serve as the verification matrix for the zero-shot re-identification engine. The pipeline processes these source descriptors to lock onto the corresponding targets inside the aerial frame above.*
 
-*   **Task 1 Validation:** Active YOLOv8 inference engine detecting structural object signatures (`[DETECTION] Model : YOLO best.pt`).
-*   **Task 2 Validation:** Real-time Bayesian Visual Odometry tracking with localized coordinate mapping against Ground Truth vectors under tight vertical constraints.
-*   **Task 3 Validation:** Live cross-modal target re-identification and patch-similarity locking status (`[TRACKING] Reference Target : LOCKED`).
+| Thermal Reference Input Patch (Biçerdöver) | Ground RGB Reference Patch (Kale) |
+| :---: | :---: |
+| ![Thermal Reference](docs/assets/thermal_reference.JPG) | ![Ground Reference](docs/assets/ground_reference.jpg) |
+
+---
+
+### 2. Comprehensive Multi-Task Pipeline & Low-Altitude Log Verification (`task2_telemetry_log.png`)
+*A unified terminal execution log validating the synchronized deployment of all three core tasks under low-altitude operational constraints (Z ≈ 10.89m). The telemetry explicitly verifies active YOLOv8 inferences, DINOv2 locking states (`Reference Target : LOCKED`), and localized coordinate transformations.*
 
 ![Multi-Task Pipeline Terminal Log](docs/assets/task2_telemetry_log.png)
+
+---
 
 ### 3. Task 1: Multi-Spectral Thermal Inference (`thermal_detection.jpg`)
 *Edge deployment verifying YOLOv8 capabilities under strict multi-spectral parameters, performing accurate localization and dynamic object segmentation directly on incoming Infrared (IR) streams.*
 
 ![Thermal Inference Tracking](docs/assets/thermal_detection.jpg)
 
-### 4. Cross-Modal & Cross-Perspective Verification Targets
-*   **Thermal Reference Input (`thermal_reference.jpg`):** Un-cooperative infrared signature matrix used as a baseline target patch for cross-modal zero-shot re-identification.
-*   **RGB Reference Input (`rgb_reference.jpg`):** Standard RGB visual baseline target patch utilized for dynamic feature mapping, scale verification, and cross-modal alignment.
-
-| Thermal Reference Input Patch | RGB Visual Reference Patch |
-| :---: | :---: |
-| ![Thermal Reference](docs/assets/thermal_reference.jpg) | ![RGB Reference](docs/assets/rgb_reference.jpg) |
-
 ---
 
-##  Installation & Setup
+## ⚙️ Installation & Setup
 
 ### Prerequisites
 *   Python 3.10+
@@ -153,10 +152,10 @@ The pipeline requires localized pre-trained weights to maintain its air-gapped c
 1.  Create a `weights` directory in the project root folder.
 2.  Place your trained YOLOv8 model file (`best.pt`) directly into the `weights/` directory.
 
-> **Note on DINOv2 Deployment:** The system architecture is configured for automated weights check. On the very first execution, if local DINOv2 base layers are missing, the pipeline will securely fetch and mühürle the weights to the local storage for permanent offline usage.
+> **Note on DINOv2 Deployment:** The system architecture is configured for automated weights check. On the very first execution, if local DINOv2 base layers are missing, the pipeline will securely fetch and deploy the weights to the local storage for permanent offline usage.
 
 ### 4. Configure Environment Variables
-Create a `.env` file in the root directory and securely populate your local credentials (such as Azure connection matrices and target IoT endpoints). Do not commit this file to the public repository.
+Create a `.env` file in the root directory and securely populate your local credentials. Do not commit this file to the public repository.
 ```env
 AZURE_IOT_CONNECTION_STRING="HostName=<your_hub_name>.azure-devices.net;DeviceId=<your_device_id>;SharedAccessKey=<your_key>"
 ```
