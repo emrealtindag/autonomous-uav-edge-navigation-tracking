@@ -1,6 +1,6 @@
 import math
-import logging  # Hata takibi için.
-import time     # Görüntü indirme süresini ölçmek için
+import logging  
+import time     
 import random  
 import json     
 import numpy as np
@@ -12,7 +12,7 @@ import sys
 from PIL import Image                                   
 from collections import deque                           
 from transformers import AutoImageProcessor, AutoModel   
-from ultralytics import YOLO  # 🚀 best.pt'yi ayağa kaldıracak asıl canavar bu kanka!
+from ultralytics import YOLO 
 from .constants import classes, landing_statuses, motion_statuses
 from .detected_object import DetectedObject
 from .detected_translation import DetectedTranslation
@@ -111,7 +111,6 @@ class ObjectDetectionModel:
         logging.info('Created Object Detection Model')
         self.evaulation_server = evaluation_server_url
         
-        # 🚀 ONNX TAMAMEN SİLİNDİ, DOĞAL YOLOv8 MOTORUNA GERİ DÖNÜLDÜ kanka
         self.model = YOLO("weights/best.pt") 
 
         # Azure IoT Hub Bağlantısı
@@ -131,7 +130,6 @@ class ObjectDetectionModel:
         self.vehicle_history = {}
         self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
         
-        # 3. GÖREV (GÖRÜNTÜ EŞLEME) DINOv2 DİNAMİK LOKAL/BULUT TANIMLAMALARI
         dino_dir = "./weights/dinov2-base"
         
         # Eğer klasör yoksa veya içi boşsa ilk seferlik internetten indirip diske mühürlüyoruz
@@ -153,7 +151,6 @@ class ObjectDetectionModel:
             if torch.cuda.is_available():
                 torch.cuda.empty_cache()
 
-        #  %100 YEREL BAĞIMLILIK DEVREDE!
         # Kod bu satıra geldiğinde model kesinlikle disktedir. İnternet kopsa bile yerelden ayağa kalkar.
         self.dino_processor = AutoImageProcessor.from_pretrained(dino_dir, local_files_only=True)
         self.dino_model = AutoModel.from_pretrained(dino_dir, local_files_only=True).to(self.device).eval()
@@ -185,7 +182,7 @@ class ObjectDetectionModel:
         # Varsayılan başlangıç kamerası
         self.K = self.K_rgb_4k
 
-        # ────────────── ODOMETRİ VE BELLEK DEĞİŞKENLERİ ──────────────
+        # Odometry changes
         self.prev_gray = None   # geçmiş fotoğraf hafızası
         self.prev_points = None # geçmiş nokta hafızası
         self.current_x = 0.0    # anlık X konumu
@@ -274,11 +271,11 @@ class ObjectDetectionModel:
             logging.info("Model tespit yapamadı, kare atlandı.")
         
         # ==================================================================
-        # 🚀 RESTORE EDİLEN 3. GÖREV ENTEGRASYONU (DINOv2)
+        #  DINOv2
         # ==================================================================
         active_refs = kwargs.get('active_refs', [])
         
-        # 🎯 KRİTİK ZIRH: Eğer main.py boş gönderirse, hafızaya aldığımız tüm referansları aktif kabul et!
+        # Fallback: If active_refs is null, default to evaluating all precomputed RAM references
         if not active_refs and self.precomputed_3rd_refs:
             active_refs = [{"url": k} for k in self.precomputed_3rd_refs.keys()]
 
@@ -342,7 +339,7 @@ class ObjectDetectionModel:
                     bottom_right_y=float(pred["bottom_right_y"])
                 )
                 prediction.add_reference_prediction(ref_pred_obj)
-                print(f"   [DINOv2 KİLİT]: {ref_url} başarıyla eşleşti koordinatlar: {pred['top_left_x']},{pred['top_left_y']}")
+                print(f"   [Target Locked]: {ref_url} başarıyla eşleşti koordinatlar: {pred['top_left_x']},{pred['top_left_y']}")
                 
         return prediction
     
@@ -383,7 +380,6 @@ class ObjectDetectionModel:
         results_list = []
         track_id_counter = 1000  # Yeni nesneler için başlangıç ID'si
         
-        # 🚀 Doğal Ultralytics YOLOv8 Çıkarımı (NMS otomatik olarak devrede!)
         yolo_outputs = self.model(frame, verbose=False, device=self.device)
         
         for box in yolo_outputs[0].boxes:
@@ -391,16 +387,16 @@ class ObjectDetectionModel:
             cls_id = int(box.cls[0].cpu().item())
             
             if conf > 0.20:  # Güvenlik eşiği
-                # Kutunun koordinatlarını doğrudan orijinal resim çözünürlüğünde alıyoruz kanka
+                # Extract bounding box coordinates relative to native image resolution
                 x1, y1, x2, y2 = box.xyxy[0].cpu().numpy()
                 
                 cx, cy = (x1 + x2) / 2.0, (y1 + y2) / 2.0
                 matched_id = track_id_counter
                 
-                # Senin yazdığın sarsıntı kalkanı (vehicle_history) ile uyum kontrolü
+                # Temporal consistency check against tracked object history
                 for tid, v_data in self.vehicle_history.items():
                     dist = math.sqrt((cx - v_data['x'])**2 + (cy - v_data['y'])**2)
-                    if dist < 40.0:  # Eğer nesne eski karedeki bir aracın 40 piksel yakınındaysa ID'sini korur
+                    if dist < 40.0:  # Retain tracking ID if object falls within a 40-pixel proximity radius
                         matched_id = tid
                         break
                 
@@ -420,7 +416,7 @@ class ObjectDetectionModel:
 
         current_frame_ids = []
 
-        # 🎯 [SARSINTI KALKANI] - Görüntü netliğini bozmadan tam çözünürlükte sarsıntı takibi
+        # [Stabilization Shield] - High-resolution motion tracking to handle airframe vibrations
         if not hasattr(self, 'prev_gray_detect'):
             self.prev_gray_detect = None
 
@@ -518,7 +514,7 @@ class ObjectDetectionModel:
                 landing_status = landing_statuses["Not_Landing_Zone"] 
                 moving_status = motion_statuses["Stationary"]  # Varsayılan olarak sabit kabul ediyoruz
                 
-                # 🔄 Yayalar için de sarsıntı kalkanı ve hareket takibini devreye alıyoruz kanka
+                #  Yayalar için de sarsıntı kalkanı ve hareket takibini devreye alıyoruz kanka
                 if track_id in self.vehicle_history:
                     prev_data = self.vehicle_history[track_id]
                     age = prev_data['age'] + 1
@@ -530,7 +526,7 @@ class ObjectDetectionModel:
                     else:
                         net_movement = ((center_x - prev_data['x'])**2 + (center_y - prev_data['y'])**2) ** 0.5
                     
-                    # 🎯 İnsanlar araçlara göre daha yavaş adım attığı için eşiği 1.8 piksele çektik
+                    # Lowered pedestrian threshold to 1.8 pixels to account for slower displacement speed
                     dynamic_threshold = 1.8
                     if net_movement > dynamic_threshold:
                         moving_status = motion_statuses["Moving"]
@@ -545,7 +541,7 @@ class ObjectDetectionModel:
                     continue
                 
             elif cls_id in [2, 3]: 
-                cls = classes["UAP"] if cls_id == 2 else classes["UAI"]
+                cls = classes["Landing_Zone_1"] if cls_id == 2 else classes["Landing_Zone_2"]
                 landing_status = landing_statuses["Landable"] 
                 moving_status = motion_statuses["Stationary"]
 
@@ -567,7 +563,7 @@ class ObjectDetectionModel:
             else:
                 continue 
 
-            # 🚀 Payload'a tam uyumlu olarak d_obj oluşturuluyor
+
             d_obj = DetectedObject(cls,
                                    landing_status,
                                    moving_status,
@@ -626,9 +622,7 @@ class ObjectDetectionModel:
                     by = min(h, int(obj.bottom_right_y))
                     cv2.rectangle(flow_mask, (tx, ty), (bx, by), 0, -1)
 
-        # ==================================================================
-        # 🛰️ DURUM A: GPS YOK (CRUISE / ATALET SÜRÜŞ MODU)
-        # ==================================================================
+
         if health_status == '0':
             if not hasattr(self, '_gps_handoff_done'):
                 if hasattr(self, 'prev_gt_x'):
@@ -726,7 +720,7 @@ class ObjectDetectionModel:
                                 self.current_y += self.smooth_global_dy
                                 good_new = good_new[inliers.ravel() == 1] if inliers is not None else good_new
 
-                # 🎯 KULVAR 2: ORİJİNAL RGB MOTOR (w >= 1000)
+                #  RGB MOTOR (w >= 1000)
                 else:
                     if hasattr(self, 'last_dx_pixel') and hasattr(self, 'last_dy_pixel'):
                         motion_mag = math.sqrt(self.last_dx_pixel**2 + self.last_dy_pixel**2)
@@ -765,7 +759,7 @@ class ObjectDetectionModel:
 
                             if inlier_ratio >= 0.40:
                                 tracking_success = True
-                                # 🌟 SENİN GÖZÜN GİBİ SAKINDIĞIN DEĞERLER BURADA SAPASAĞLAM KANKA:
+                                
                                 a = transform_matrix[0, 0]
                                 c = transform_matrix[1, 0]
                                 delta_yaw = math.atan2(c, a)
@@ -787,7 +781,7 @@ class ObjectDetectionModel:
                                     target_absolute_z = absolute_z / scale_change
                                     delta_z = target_absolute_z - absolute_z
                                     
-                                    # 🛰️ HIZA DUYARLI ADAPTİF FİLTRE KALKANI
+                                    #  HIZA DUYARLI ADAPTİF FİLTRE KALKANI
                                     scale_deviation = abs(1.0 - scale_change)
                                     
                                     if scale_deviation > 0.02:
@@ -863,9 +857,7 @@ class ObjectDetectionModel:
             prediction.add_translation_object(trans_obj)
             return frame
 
-        # ==================================================================
-        # 🛰️ DURUM B: GPS VAR (ÖĞRENME VE KALİBRASYON MODU)
-        # ==================================================================
+
         else:
             gt_x = float(prediction.gt_translation_x)
             gt_y = float(prediction.gt_translation_y)
@@ -984,7 +976,7 @@ class ObjectDetectionModel:
             "timestamp": time.time()
         }
         
-        # Eğer Azure bağlantısı aktifse asenkron/güvenli olarak veriyi buluta fırlatır
+        # Asynchronously transmit telemetry packet to Azure cloud gateway if connection is alive
         if self.azure_client is not None:
             try:
                 self.azure_client.send_message(json.dumps(telemetry_data))
@@ -1020,7 +1012,7 @@ class ObjectDetectionModel:
             if obj_id is None or not img_url:
                 continue
                 
-            # 🚀 URL DÜZELTMESİ: Jürinin unuttuğu o sinsi /media/ kapısını zorla araya sokuyoruz kanka!
+            # Patch: Handle missing media directory prefix validation for edge asset URLs
             if img_url.startswith('/') and hasattr(server, 'base_url'):
                 base = server.base_url.rstrip('/')
                 if not img_url.startswith('/media/'):

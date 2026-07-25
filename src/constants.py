@@ -1,8 +1,8 @@
 classes = {
     "Vehicle": 0,
     "Pedestrian": 1,
-    "UAP": 2,
-    "UAI": 3,
+    "Landing_Zone_1": 2,
+    "Landing_Zone_2": 3,
 }
 
 landing_statuses = {
