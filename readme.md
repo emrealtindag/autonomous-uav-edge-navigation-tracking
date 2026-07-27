@@ -98,7 +98,7 @@ A unified terminal execution log validating the synchronized deployment of all t
 ### 3. Multi-Spectral Thermal Inference & Class Override
 Edge deployment verifying YOLOv8 capabilities under multi-spectral parameters. This visual confirms the successful deployment of our custom inference dictionary overrides, mapping legacy weights to standardized English nomenclature (`Vehicle`) directly onto raw Infrared (IR) streams with sharp natural confidence distribution.
 
-![Thermal Inference Tracking](docs/assets/thermal_detection.jpg)
+![Thermal Inference Tracking](docs/assets/thermal_detection.png)
 
 ---
 
